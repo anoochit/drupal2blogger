@@ -79,7 +79,8 @@ for ($i_node = 0; $i_node < $numrows_node; $i_node++) {
       break;
     default:
       // Skip.
-      continue;
+      // Use "continue 2", cf. http://www.php.net/manual/en/control-structures.switch.php.
+      continue 2;
   }
 
   $nid = mysql_result($result_node, $i_node, "nid");
@@ -99,7 +100,7 @@ for ($i_node = 0; $i_node < $numrows_node; $i_node++) {
 
   print "
   <entry>
-    <id>tag:drupal,blog-$blogger_id.$blogger_type-$id</id>
+    <id>tag:blogger.com,1999:blog-$blogger_id.$blogger_type-$id</id>
     <published>$created</published>
     <updated>$updated</updated>
     <category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/blogger/2008/kind#$blogger_type'/>";
@@ -149,22 +150,24 @@ for ($i_node = 0; $i_node < $numrows_node; $i_node++) {
 // Comments
 $sql_c = "SELECT * FROM ".$db_prefix."comment as c JOIN ".$db_prefix."field_data_comment_body as fdcb ON c.cid=fdcb.entity_id";
 $result_c = mysql_query($sql_c) or die (mysql_error());
-$numrows_c=mysql_numrows($result_c);
+$numrows_c = mysql_numrows($result_c);
 for ($i_c = 0; $i_c < $numrows_c; $i_c++) {
   // Node ID.
   $nid = mysql_result($result_c, $i_c, "nid");
   $parent_id = my_hash($nid, 63);
   // Comment ID.
   $cid = mysql_result($result_c, $i_c, "cid");
+  // Add numrows_node to make the ID globally unique.
+  $cid += $numrows_node;
   $comment_id = my_hash($cid, 63);
   // Meta data.
   $created = date("c", mysql_result($result_c,$i_c,"created"));
   $changed = date("c", mysql_result($result_c,$i_c,"changed"));
   $title = htmlspecialchars(mysql_result($result_c, $i_c, "subject"));
   $body = htmlspecialchars(mysql_result($result_c, $i_c, "comment_body_value"));
-  $author = mysql_result($result_c, $i_c, "name");
-  $email = mysql_result($result_c, $i_c, "mail");
-  $url = mysql_result($result_c, $i_c, "homepage");
+  $author_name = mysql_result($result_c, $i_c, "name");
+  $author_email = mysql_result($result_c, $i_c, "mail");
+  $author_url = mysql_result($result_c, $i_c, "homepage");
 
   // Get the parent node.
   $sql = "SELECT * FROM ".$db_prefix."node as n JOIN ".$db_prefix."field_data_body as fdb ON n.nid=fdb.entity_id WHERE n.nid = $nid";
@@ -185,7 +188,8 @@ for ($i_c = 0; $i_c < $numrows_c; $i_c++) {
       break;
     default:
       // Skip. Blogger pages (as opposed to posts) cannot have comments.
-      continue;
+      // Use "continue 2", cf. http://www.php.net/manual/en/control-structures.switch.php.
+      continue 2;
   }
 
   // Create 32bit "pid" (9-digit decimal).
@@ -198,11 +202,11 @@ for ($i_c = 0; $i_c < $numrows_c; $i_c++) {
   // August 13, 2012 8:11 AM
   $formatted_date = date('F m, Y h:i A',mysql_result($result_c,$i_c,"created"));
 
-  $parent_blogger_id = "tag:drupal,blog-$blogger_id.post-$parent_id";
+  $parent_blogger_id = "tag:blogger.com,1999:blog-$blogger_id.post-$parent_id";
 
   //
   print "<entry>
-    <id>tag:drupal,blog-$blogger_id.post-$parent_id.comment-$comment_id</id>
+    <id>tag:blogger.com,1999:blog-$blogger_id.post-$comment_id</id>
     <published>$created</published>
     <updated>$changed</updated>
     <category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/blogger/2008/kind#comment'/>
@@ -210,11 +214,12 @@ for ($i_c = 0; $i_c < $numrows_c; $i_c++) {
     <content type='html'>$body</content>
     <link href=\"http://www.blogger.com/feeds/$blogger_id/$parent_id/comments/default/$comment_id\" rel=\"edit\" type=\"application/atom+xml\"/>
     <link href=\"http://www.blogger.com/feeds/$blogger_id/$parent_id/comments/default/$comment_id\" rel=\"self\" type=\"application/atom+xml\"/>
-    <link href=\"$my_url?showComment=1344870684962#c$comment_id\" rel=\"alternate\" title=\"\" type=\"text/html\"/>";
+    <link href=\"$parent_url?showComment=1344870684962#c$comment_id\" rel=\"alternate\" title=\"\" type=\"text/html\"/>";
     // TODO conditionally insert "related"
-    print "<author><name>$author</name>
-      <uri>$url</uri>
-      <email>a@a.com</email>
+    print "
+    <author><name>$author_name</name>
+      <uri>$author_url</uri>
+      <email>noreply@blogger.com</email>
     </author>
     <thr:in-reply-to href=\"$parent_url\" ref=\"$parent_blogger_id\" source=\"http://www.blogger.com/feeds/$blogger_id/posts/default/$parent_id\" type=\"text/html\"/>
     <gd:extendedProperty name=\"blogger.itemClass\" value=\"pid-$pid\"/>
