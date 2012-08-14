@@ -158,7 +158,7 @@ $i_c=0;
 while ($i_c < $numrows_c) {
   // Node ID.
   $nid = mysql_result($result_c, $i_c, "nid");
-  $post_id = my_hash($nid, 63);
+  $parent_id = my_hash($nid, 63);
   // Comment ID.
   $cid = mysql_result($result_c, $i_c, "cid");
   $comment_id = my_hash($cid, 63);
@@ -182,29 +182,47 @@ while ($i_c < $numrows_c) {
   $ym = date('Y/m',mysql_result($result,0,"created"));
   $parent_url = "http://$blog_url/$ym/$simple_title.html";
 
+  $type= htmlspecialchars(mysql_result($result,0,"type"));
+  // Translate the type into Blogger lingo.
+  switch ($type) {
+    case "page":
+      $parent_type = "page";
+      break;
+    case "story":
+      $parent_type = "post";
+      break;
+    default:
+      // Skip.
+      continue;
+  }
+
   // Create 32bit "pid" (9-digit decimal).
+  // From http://api.drupal.org/api/drupal/modules%21comment%21comment.pages.inc/function/comment_reply/7:
+  // $pid: Some comments are replies to other comments. In those cases, $pid is the parent comment's cid.
   $pid = mysql_result($result_c, $i_c, "pid");
   // 9-digit decimal = 32bit.
-  $comment_id = my_hash($cid, 32);
+  $pid = my_hash($pid, 32);
 
   // August 13, 2012 8:11 AM
   $formatted_date = date('F m, Y h:i A',mysql_result($result_c,$i_c,"created"));
 
+  $parent_blogger_id = "tag:drupal,blog-$blogger_id.$parent_type-$parent_id";
+
   print "<entry>
-    <id>tag:drupal,blog-$blogger_id.$blogger_type-$id</id>
+    <id>tag:drupal,blog-$blogger_id.$parent_type-$comment_id</id>
     <published>$created</published>
     <updated>$changed</updated>
     <category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/blogger/2008/kind#comment'/>
     <title type='text'>$title</title>
     <content type='html'>$body</content>
-    <link href=\"http://www.blogger.com/feeds/$blogger_id/$post_id/comments/default/$comment_id\" rel=\"edit\" type=\"application/atom+xml\"/>
-    <link href=\"http://www.blogger.com/feeds/$blogger_id/$post_id/comments/default/$comment_id\" rel=\"self\" type=\"application/atom+xml\"/>
+    <link href=\"http://www.blogger.com/feeds/$blogger_id/$parent_id/comments/default/$comment_id\" rel=\"edit\" type=\"application/atom+xml\"/>
+    <link href=\"http://www.blogger.com/feeds/$blogger_id/$parent_id/comments/default/$comment_id\" rel=\"self\" type=\"application/atom+xml\"/>
     <link href=\"$my_url?showComment=1344870684962#c$comment_id\" rel=\"alternate\" title=\"\" type=\"text/html\"/>
     <author><name>$author</name>
       <uri>$url</uri>
       <email>a@a.com</email>
     </author>
-    <thr:in-reply-to href=\"$parent_url\" ref=\"tag:blogger.com,1999:blog-$blogger_id.post-$post_id\" source=\"http://www.blogger.com/feeds/$blog_id/posts/default/$post_id\" type=\"text/html\"/>
+    <thr:in-reply-to href=\"$parent_url\" ref=\"$parent_blogger_id\" source=\"http://www.blogger.com/feeds/$blogger_id/posts/default/$parent_id\" type=\"text/html\"/>
     <gd:extendedProperty name=\"blogger.itemClass\" value=\"pid-$pid\"/>
     <gd:extendedProperty name=\"blogger.displayTime\" value=\"$formatted_date\"/>
   </entry>
