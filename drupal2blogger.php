@@ -66,10 +66,8 @@ mysql_select_db($db) or die(mysql_error());
 // Nodes
 $result_node = mysql_query($sql) or die (mysql_error());
 $numrows_node = mysql_numrows($result_node);
-$i_node=0;
-
 // Loop over the nodes.
-while ($i_node < $numrows_node) {
+for ($i_node = 0; $i_node < $numrows_node; $i_node++) {
   $type= htmlspecialchars(mysql_result($result_node,$i_node,"type"));
   // Translate the type into Blogger lingo.
   switch ($type) {
@@ -146,16 +144,13 @@ while ($i_node < $numrows_node) {
   print "
     $global_author_tag
   </entry>";
-
-  $i_node++;
 }
 
 // Comments
 $sql_c = "SELECT * FROM ".$db_prefix."comment as c JOIN ".$db_prefix."field_data_comment_body as fdcb ON c.cid=fdcb.entity_id";
 $result_c = mysql_query($sql_c) or die (mysql_error());
 $numrows_c=mysql_numrows($result_c);
-$i_c=0;
-while ($i_c < $numrows_c) {
+for ($i_c = 0; $i_c < $numrows_c; $i_c++) {
   // Node ID.
   $nid = mysql_result($result_c, $i_c, "nid");
   $parent_id = my_hash($nid, 63);
@@ -182,17 +177,14 @@ while ($i_c < $numrows_c) {
   $ym = date('Y/m',mysql_result($result,0,"created"));
   $parent_url = "http://$blog_url/$ym/$simple_title.html";
 
-  $type= htmlspecialchars(mysql_result($result,0,"type"));
+  $type = htmlspecialchars(mysql_result($result,0,"type"));
   // Translate the type into Blogger lingo.
   switch ($type) {
-    case "page":
-      $parent_type = "page";
-      break;
     case "story":
       $parent_type = "post";
       break;
     default:
-      // Skip.
+      // Skip. Blogger pages (as opposed to posts) cannot have comments.
       continue;
   }
 
@@ -206,10 +198,11 @@ while ($i_c < $numrows_c) {
   // August 13, 2012 8:11 AM
   $formatted_date = date('F m, Y h:i A',mysql_result($result_c,$i_c,"created"));
 
-  $parent_blogger_id = "tag:drupal,blog-$blogger_id.$parent_type-$parent_id";
+  $parent_blogger_id = "tag:drupal,blog-$blogger_id.post-$parent_id";
 
+  //
   print "<entry>
-    <id>tag:drupal,blog-$blogger_id.$parent_type-$comment_id</id>
+    <id>tag:drupal,blog-$blogger_id.post-$parent_id.comment-$comment_id</id>
     <published>$created</published>
     <updated>$changed</updated>
     <category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/blogger/2008/kind#comment'/>
@@ -217,8 +210,9 @@ while ($i_c < $numrows_c) {
     <content type='html'>$body</content>
     <link href=\"http://www.blogger.com/feeds/$blogger_id/$parent_id/comments/default/$comment_id\" rel=\"edit\" type=\"application/atom+xml\"/>
     <link href=\"http://www.blogger.com/feeds/$blogger_id/$parent_id/comments/default/$comment_id\" rel=\"self\" type=\"application/atom+xml\"/>
-    <link href=\"$my_url?showComment=1344870684962#c$comment_id\" rel=\"alternate\" title=\"\" type=\"text/html\"/>
-    <author><name>$author</name>
+    <link href=\"$my_url?showComment=1344870684962#c$comment_id\" rel=\"alternate\" title=\"\" type=\"text/html\"/>";
+    // TODO conditionally insert "related"
+    print "<author><name>$author</name>
       <uri>$url</uri>
       <email>a@a.com</email>
     </author>
@@ -227,8 +221,6 @@ while ($i_c < $numrows_c) {
     <gd:extendedProperty name=\"blogger.displayTime\" value=\"$formatted_date\"/>
   </entry>
   ";
-
-  $i_c++;
 }
 
 echo "\n";
