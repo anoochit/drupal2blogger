@@ -97,6 +97,7 @@ for ($i_node = 0; $i_node < $numrows_node; $i_node++) {
   // recreate those later for the comments.
   // Hence, create a 63bit hash from the NodeID.
   $id = my_hash($nid, 63);
+  // TODO hash isn't always 19 digits long. assert.
 
   print "
   <entry>
@@ -158,8 +159,8 @@ for ($i_c = 0; $i_c < $numrows_c; $i_c++) {
   // Comment ID.
   $cid = mysql_result($result_c, $i_c, "cid");
   // Add numrows_node to make the ID globally unique.
-  $cid += $numrows_node;
-  $comment_id = my_hash($cid, 63);
+  // TODO this should rather be the maximum NID.
+  $comment_id = my_hash($cid+$numrows_node, 63);
   // Meta data.
   $created = date("c", mysql_result($result_c,$i_c,"created"));
   $changed = date("c", mysql_result($result_c,$i_c,"changed"));
@@ -197,7 +198,7 @@ for ($i_c = 0; $i_c < $numrows_c; $i_c++) {
   // $pid: Some comments are replies to other comments. In those cases, $pid is the parent comment's cid.
   $pid = mysql_result($result_c, $i_c, "pid");
   // 9-digit decimal = 32bit.
-  $pid = my_hash($pid, 32);
+  $pid_hash = my_hash($pid, 32);
 
   // August 13, 2012 8:11 AM
   $formatted_date = date('F m, Y h:i A',mysql_result($result_c,$i_c,"created"));
@@ -205,7 +206,8 @@ for ($i_c = 0; $i_c < $numrows_c; $i_c++) {
   $parent_blogger_id = "tag:blogger.com,1999:blog-$blogger_id.post-$parent_id";
 
   //
-  print "<entry>
+  print "
+  <entry>
     <id>tag:blogger.com,1999:blog-$blogger_id.post-$comment_id</id>
     <published>$created</published>
     <updated>$changed</updated>
@@ -215,14 +217,35 @@ for ($i_c = 0; $i_c < $numrows_c; $i_c++) {
     <link href=\"http://www.blogger.com/feeds/$blogger_id/$parent_id/comments/default/$comment_id\" rel=\"edit\" type=\"application/atom+xml\"/>
     <link href=\"http://www.blogger.com/feeds/$blogger_id/$parent_id/comments/default/$comment_id\" rel=\"self\" type=\"application/atom+xml\"/>
     <link href=\"$parent_url?showComment=1344870684962#c$comment_id\" rel=\"alternate\" title=\"\" type=\"text/html\"/>";
-    // TODO conditionally insert "related"
-    print "
-    <author><name>$author_name</name>
-      <uri>$author_url</uri>
-      <email>noreply@blogger.com</email>
-    </author>
-    <thr:in-reply-to href=\"$parent_url\" ref=\"$parent_blogger_id\" source=\"http://www.blogger.com/feeds/$blogger_id/posts/default/$parent_id\" type=\"text/html\"/>
-    <gd:extendedProperty name=\"blogger.itemClass\" value=\"pid-$pid\"/>
+    // If the post is a reply to a reply, add "related" link. This always refers to the top-level comment.
+    // In Drupal, a comment on a comments is marked by having PID!=0. Thus, find the highest-level related
+    // comment with PID=0.
+    $curr_pid = $pid;
+    if ($curr_pid != 0) {
+      while ($curr_pid != 0) {
+        $prev_pid = $curr_pid;
+        $curr_pid = mysql_result($result_c, $prev_pid, "pid");
+      }
+      // At this point, $prev_pid is the ID of the comment with PID=0.
+      $related_comment_id = my_hash($prev_pid+$numrows_node, 63);
+      print "<link href=\"http://www.blogger.com/feeds/$blogger_id/$parent_id/comments/default/$related_comment_id\" rel=\"related\" type=\"application/atom+xml\"/>";
+    }
+    if ($author_name == "Nico") {
+      print $global_author_tag;
+    } else {
+      print "
+      <author>
+        <name>$author_name</name>";
+      if (!empty($author_url))
+        print "
+        <uri>$author_url</uri>";
+      print "
+        <email>noreply@blogger.com</email>
+      </author>
+      ";
+    }
+    print "<thr:in-reply-to href=\"$parent_url\" ref=\"$parent_blogger_id\" source=\"http://www.blogger.com/feeds/$blogger_id/posts/default/$parent_id\" type=\"text/html\"/>
+    <gd:extendedProperty name=\"blogger.itemClass\" value=\"pid-$pid_hash\"/>
     <gd:extendedProperty name=\"blogger.displayTime\" value=\"$formatted_date\"/>
   </entry>
   ";
