@@ -1,32 +1,22 @@
 <?php
 /**
- * Drupal to Blogger
- * Script to export your drupal_database to an XML format that is importable in Blogger.
- * Copyleft Christophe Vandeplas <christophe@vandeplas.com>
+ *   Copyright (c) 2012, Nico Schlömer <nico.schloemer@gmail.com>
+ *   All rights reserved.
  *
- * This php script does the export while keeping:
- *   posts
- *   comments
- *   publishing date
- * However there are a few quirks:
- *   Comments are (partially) anonymized because of a security feature of Blogger
- *   URLs are not customizable, so you will create dead links
- *   Images are not changed or imported. So manual work is still necessary
+ *   This file is part of drupal2blogger.
  *
- * INSTRUCTIONS
- ***************
- * To use this script first create your blog into Blogger, create a test posts
- * and export it to XML. Then run this php script and copy paste the output towards
- * the bottom of the XML, where your test post is located.
- * Save the file and import it again in Blogger. It usually takes some time,
- * but in the end you get the message that everything is imported correctly.
+ *   drupal2blogger is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
  */
 
 include 'my_data.php';
-
-/////////////////////////////////////////////////
-// you should probably NOT change anything below
-//
 
 function my_hash($input, $num_bits){
   // Limit the size to 64bit; otherwise, decbin
@@ -57,7 +47,7 @@ function simplify_string($input){
 
 // We'll be outputting a xml
 header('Content-type: text/xml');
-header('Content-Disposition: attachment; filename="drupal_to_blogger_export.xml"');
+header('Content-Disposition: attachment; filename="drupal2blogger_export.xml"');
 
 $sql = "SELECT * FROM ".$db_prefix."node as n JOIN ".$db_prefix."field_data_body as fdb ON n.nid=fdb.entity_id";
 mysql_connect("localhost", $user, $pass) or die(mysql_error());
