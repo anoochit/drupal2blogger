@@ -230,20 +230,16 @@ for ($i_c = 0; $i_c < $numrows_c; $i_c++) {
       $related_comment_id = my_hash($prev_pid+$numrows_node, 63);
       print "<link href=\"http://www.blogger.com/feeds/$blogger_id/$parent_id/comments/default/$related_comment_id\" rel=\"related\" type=\"application/atom+xml\"/>";
     }
-    if ($author_name == "Nico") {
-      print $global_author_tag;
-    } else {
+    print "
+    <author>
+      <name>$author_name</name>";
+    if (!empty($author_url))
       print "
-      <author>
-        <name>$author_name</name>";
-      if (!empty($author_url))
-        print "
-        <uri>$author_url</uri>";
-      print "
-        <email>noreply@blogger.com</email>
-      </author>
-      ";
-    }
+      <uri>$author_url</uri>";
+    print "
+      <email>noreply@blogger.com</email>
+    </author>
+    ";
     print "<thr:in-reply-to href=\"$parent_url\" ref=\"$parent_blogger_id\" source=\"http://www.blogger.com/feeds/$blogger_id/posts/default/$parent_id\" type=\"text/html\"/>
     <gd:extendedProperty name=\"blogger.itemClass\" value=\"pid-$pid_hash\"/>
     <gd:extendedProperty name=\"blogger.displayTime\" value=\"$formatted_date\"/>
