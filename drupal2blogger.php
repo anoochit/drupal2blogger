@@ -50,8 +50,8 @@ function simplify_string($input){
 }
 
 // We'll be outputting a xml
-//header('Content-type: text/xml');
-//header('Content-Disposition: attachment; filename="drupal2blogger_export.xml"');
+header('Content-type: text/xml');
+header('Content-Disposition: attachment; filename="drupal2blogger_export.xml"');
 
 $sql = "SELECT * FROM ".$db_prefix."node as n JOIN ".$db_prefix."field_data_body as fdb ON n.nid=fdb.entity_id";
 
