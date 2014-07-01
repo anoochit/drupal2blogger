@@ -18,6 +18,10 @@
 
 include 'my_data.php';
 
+require 'vendor/autoload.php';
+use \Michelf\Markdown;
+
+
 function my_hash($input, $num_bits){
   // Limit the size to 64bit; otherwise, decbin
   // has problems (always returns 0).
@@ -46,21 +50,29 @@ function simplify_string($input){
 }
 
 // We'll be outputting a xml
-header('Content-type: text/xml');
-header('Content-Disposition: attachment; filename="drupal2blogger_export.xml"');
+//header('Content-type: text/xml');
+//header('Content-Disposition: attachment; filename="drupal2blogger_export.xml"');
 
 $sql = "SELECT * FROM ".$db_prefix."node as n JOIN ".$db_prefix."field_data_body as fdb ON n.nid=fdb.entity_id";
-mysql_connect("localhost", $user, $pass) or die(mysql_error());
+
+mysql_connect("127.0.0.1", $user, $pass) or die(mysql_error());
 mysql_select_db($db) or die(mysql_error());
 
 // Nodes
 $result_node = mysql_query($sql) or die (mysql_error());
 $numrows_node = mysql_numrows($result_node);
+
+
 // Loop over the nodes.
 for ($i_node = 0; $i_node < $numrows_node; $i_node++) {
   $type= htmlspecialchars(mysql_result($result_node,$i_node,"type"));
+
+
   // Translate the type into Blogger lingo.
   switch ($type) {
+    case "blog":
+      $blogger_type = "post";
+      break;
     case "page":
       $blogger_type = "page";
       break;
@@ -77,7 +89,11 @@ for ($i_node = 0; $i_node < $numrows_node; $i_node++) {
   $title= htmlspecialchars(mysql_result($result_node,$i_node,"title"));
   $created= date("c", mysql_result($result_node,$i_node,"created"));
   $updated= date("c", mysql_result($result_node,$i_node,"changed"));
-  $body= htmlspecialchars(mysql_result($result_node,$i_node,"body_value"));
+
+  $body_md = mysql_result($result_node,$i_node,"body_value");
+
+  $body_html = Markdown::defaultTransform($body_md);
+  $body= htmlspecialchars($body_html);
 
   $sql_cc = "SELECT * FROM ".$db_prefix."node_comment_statistics WHERE nid = $nid";
   $result_cc = mysql_query($sql_cc) or die (mysql_error());
@@ -89,7 +105,7 @@ for ($i_node = 0; $i_node < $numrows_node; $i_node++) {
   $id = my_hash($nid, 63);
   // TODO hash isn't always 19 digits long. assert.
 
-  print "
+  echo "
   <entry>
     <id>tag:blogger.com,1999:blog-$blogger_id.$blogger_type-$id</id>
     <published>$created</published>
@@ -107,7 +123,7 @@ for ($i_node = 0; $i_node < $numrows_node; $i_node++) {
       $sql_cat2 = "SELECT * from ".$db_prefix."taxonomy_term_data as ttd WHERE tid = $tid";
       $result_cat2 = mysql_query($sql_cat2) or die (mysql_error());
       $cat_name=mysql_result($result_cat2,0,"name");
-      print "<category scheme='http://www.blogger.com/atom/ns#' term='$cat_name'/>";
+      echo "<category scheme='http://www.blogger.com/atom/ns#' term='$cat_name'/>";
       $i_cat++;
     }
   }
@@ -119,21 +135,23 @@ for ($i_node = 0; $i_node < $numrows_node; $i_node++) {
   $my_url = "http://$blog_url/$ym/$simple_title.html";
   // This would be for unpublished pages:
   //$my_url = "http://$blog_url/p/$simple_title.html";
+  //
+  //
 
-  print "
+  echo "
     <title type='text'>$title</title>
     <content type='html'>$body</content>";
   if ($num_comments > 0){
     // Comment links.
-    print "<link href=\"http://$blog_url/feeds/$blogger_id/comments/default\" rel=\"replies\" title=\"Post Comments\" type=\"application/atom+xml\"/>";
-    print "<link href=\"$my_url#comment-form\" rel=\"replies\" title=\"$num_comments Comments\" type=\"text/html\"/>";
+    echo "<link href=\"http://$blog_url/feeds/$blogger_id/comments/default\" rel=\"replies\" title=\"Post Comments\" type=\"application/atom+xml\"/>";
+    echo "<link href=\"$my_url#comment-form\" rel=\"replies\" title=\"$num_comments Comments\" type=\"text/html\"/>";
   }
 
-  print "
+  echo "
   <link href=\"http://www.blogger.com/feeds/$blogger_id/pages/default/$id\" rel=\"edit\" type=\"application/atom+xml\"/>
   <link href=\"http://www.blogger.com/feeds/$blogger_id/pages/default/$id\" rel=\"self\" type=\"application/atom+xml\"/>
   <link href=\"$my_url\" rel=\"alternate\" title=\"$title\" type=\"text/html\"/>";
-  print "
+  echo "
     $global_author_tag
   </entry>";
 }
@@ -196,7 +214,7 @@ for ($i_c = 0; $i_c < $numrows_c; $i_c++) {
   $parent_blogger_id = "tag:blogger.com,1999:blog-$blogger_id.post-$parent_id";
 
   //
-  print "
+  echo "
   <entry>
     <id>tag:blogger.com,1999:blog-$blogger_id.post-$comment_id</id>
     <published>$created</published>
@@ -218,23 +236,24 @@ for ($i_c = 0; $i_c < $numrows_c; $i_c++) {
       }
       // At this point, $prev_pid is the ID of the comment with PID=0.
       $related_comment_id = my_hash($prev_pid+$numrows_node, 63);
-      print "<link href=\"http://www.blogger.com/feeds/$blogger_id/$parent_id/comments/default/$related_comment_id\" rel=\"related\" type=\"application/atom+xml\"/>";
+      echo "<link href=\"http://www.blogger.com/feeds/$blogger_id/$parent_id/comments/default/$related_comment_id\" rel=\"related\" type=\"application/atom+xml\"/>";
     }
-    print "
+    echo "
     <author>
       <name>$author_name</name>";
     if (!empty($author_url))
-      print "
+      echo "
       <uri>$author_url</uri>";
-    print "
+    echo "
       <email>noreply@blogger.com</email>
     </author>
     ";
-    print "<thr:in-reply-to href=\"$parent_url\" ref=\"$parent_blogger_id\" source=\"http://www.blogger.com/feeds/$blogger_id/posts/default/$parent_id\" type=\"text/html\"/>
+    echo "<thr:in-reply-to href=\"$parent_url\" ref=\"$parent_blogger_id\" source=\"http://www.blogger.com/feeds/$blogger_id/posts/default/$parent_id\" type=\"text/html\"/>
     <gd:extendedProperty name=\"blogger.itemClass\" value=\"pid-$pid_hash\"/>
     <gd:extendedProperty name=\"blogger.displayTime\" value=\"$formatted_date\"/>
   </entry>
   ";
 }
+
 
 echo "\n";

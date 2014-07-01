@@ -1,11 +1,11 @@
 <?php
 // change these variables
-$user="";
-$pass="";
-$db="";
+$user="xavier";
+$pass="monalisa";
+$db="drupal728";
 $db_prefix="";
 // also change these variables, it should be your blogger info
-$global_author_tag="";
-$blogger_id="";
-$blog_url="";
+$global_author_tag="Anuchit Chalothorn";
+$blogger_id="5985750931254440695";
+$blog_url="http://ossth.blogspot.com";
 ?>
