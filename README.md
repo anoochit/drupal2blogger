@@ -22,16 +22,16 @@ by Christophe Vandeplas.
 
 USAGE INSTRUCTIONS
 
-(a) Download drupal2blogger to the server that hosts the Drupal database,
+a. Download drupal2blogger to the server that hosts the Drupal database,
     and make sure it's accessible.
-(b) Modify the contents of my_data.php to match your database and Blogger
+b. Modify the contents of my_data.php to match your database and Blogger
     layout.
-(c) Execute it and download the XML file. It should contain the content
+c. Execute it and download the XML file. It should contain the content
     information of your Drupal 7 website.
-(d) Log in to Blogger, and export your blog. The export link can be found
-    at Setting->Other->Export blog. (2012/08/15)
+d. Log in to Blogger, and export your blog. The export link can be found
+    at `Setting->Other->Export` blog. (2012/08/15)
     Optionally pretty-print the Blogger export file, e.g.,
-      xml_pp blog-08-15-2012.xml > blogger.xml
-(e) Insert the contents of the Drupal 7 XML (from (c)) right before the
-    terminal </feed> in blogger.xml.
-(f) Import blogger.xml into Blogger.
+      `xml_pp blog-08-15-2012.xml > blogger.xml`
+e. Insert the contents of the Drupal 7 XML (from (c)) right before the
+    terminal `</feed>` in blogger.xml.
+f. Import blogger.xml into Blogger.
