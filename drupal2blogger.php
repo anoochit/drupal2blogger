@@ -51,12 +51,14 @@ function simplify_string($input){
 
 // We'll be outputting a xml
 header('Content-type: text/xml');
-header('Content-Disposition: attachment; filename="drupal2blogger_export.xml"');
+//header('Content-Disposition: attachment; filename="drupal2blogger_export.xml"');
+
 
 $sql = "SELECT * FROM ".$db_prefix."node as n JOIN ".$db_prefix."field_data_body as fdb ON n.nid=fdb.entity_id";
 
 mysql_connect("127.0.0.1", $user, $pass) or die(mysql_error());
 mysql_select_db($db) or die(mysql_error());
+mysql_query("SET NAMES 'utf8'");
 
 // Nodes
 $result_node = mysql_query($sql) or die (mysql_error());
@@ -70,6 +72,27 @@ for ($i_node = 0; $i_node < $numrows_node; $i_node++) {
 
   // Translate the type into Blogger lingo.
   switch ($type) {
+       case "casestudy":
+      $blogger_type = "post";
+      break;
+      case "article":
+        $blogger_type = "post";
+      break;
+     case "success_story":
+      $blogger_type = "post";
+      break;
+     case "interview":
+      $blogger_type = "post";
+      break;
+     case "review":
+      $blogger_type = "post";
+      break;
+     case "howto":
+      $blogger_type = "post";
+      break;
+     case "news":
+      $blogger_type = "post";
+      break;
     case "blog":
       $blogger_type = "post";
       break;
@@ -122,7 +145,7 @@ for ($i_node = 0; $i_node < $numrows_node; $i_node++) {
       $tid=mysql_result($result_cat,$i_cat,"tid");
       $sql_cat2 = "SELECT * from ".$db_prefix."taxonomy_term_data as ttd WHERE tid = $tid";
       $result_cat2 = mysql_query($sql_cat2) or die (mysql_error());
-      $cat_name=mysql_result($result_cat2,0,"name");
+      $cat_name=htmlspecialchars(mysql_result($result_cat2,0,"name"));
       echo "<category scheme='http://www.blogger.com/atom/ns#' term='$cat_name'/>";
       $i_cat++;
     }
